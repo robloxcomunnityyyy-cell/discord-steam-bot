@@ -1,11 +1,10 @@
+import os
 import discord
 import requests
 import asyncio
 import json
-import os
 
-TOKEN = "MTUxMDI5NzEwNjgzMTkwMDg3Ng.Go-Zf3.lGMawsi8hmj447WaPPA-u28XDPmvNVkc9LQIp0"
-CHANNEL_ID = 856527775069503530  # replace this
+CHANNEL_ID = 856527775069503530  # your channel ID
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
@@ -47,7 +46,7 @@ async def on_ready():
             deals = get_deals()
 
             for game in deals:
-                deal_id = game["dealID"]  # better unique ID
+                deal_id = game["dealID"]
 
                 if deal_id in seen_deals:
                     continue
@@ -59,11 +58,11 @@ async def on_ready():
                 app_id = game["steamAppID"]
 
                 if not app_id or app_id == "0":
+                    seen_deals.add(deal_id)
                     continue
 
                 steam_url = f"https://store.steampowered.com/app/{app_id}/"
 
-                # only good deals
                 if savings >= 70:
                     embed = discord.Embed(
                         title=f"{title} is now -{round(savings)}%",
@@ -81,7 +80,6 @@ async def on_ready():
                         embed=embed
                     )
 
-                # mark as seen no matter what (prevents spam forever)
                 seen_deals.add(deal_id)
 
             save_seen(seen_deals)
@@ -89,6 +87,6 @@ async def on_ready():
         except Exception as e:
             print("Error:", e)
 
-        await asyncio.sleep(300)  # 5 minutes
+        await asyncio.sleep(300)
 
-client.run(TOKEN)
+client.run(os.getenv("TOKEN"))
