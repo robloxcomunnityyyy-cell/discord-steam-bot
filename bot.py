@@ -78,7 +78,7 @@ async def on_ready():
 
                 steam_url = f"https://store.steampowered.com/app/{app_id}/"
 
-                if savings >= 70:
+                if savings >= 100:
                     embed = discord.Embed(
                         title=f"{title} is now -{round(savings)}%",
                         url=steam_url,
