@@ -101,7 +101,8 @@ async def on_ready():
 
         except Exception as e:
             print("Error:", e)
-
+            
+        print("Still alive 😅")
         await asyncio.sleep(300)
 
 client.run(os.getenv("TOKEN"))
