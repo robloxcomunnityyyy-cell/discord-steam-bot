@@ -4,6 +4,21 @@ import requests
 import asyncio
 import json
 
+from flask import Flask
+from threading import Thread
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Discord Steam Bot is running!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
+Thread(target=run_web).start()
+
 CHANNEL_ID = 856527775069503530  # your channel ID
 
 intents = discord.Intents.default()
