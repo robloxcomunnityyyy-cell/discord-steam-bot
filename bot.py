@@ -78,7 +78,7 @@ async def on_ready():
 
                 steam_url = f"https://store.steampowered.com/app/{app_id}/"
 
-                if savings >= 100:
+                if sale_price == "0.00":
                     embed = discord.Embed(
                         title=f"{title} is now -{round(savings)}%",
                         url=steam_url,
@@ -101,6 +101,8 @@ async def on_ready():
 
         except Exception as e:
             print("Error:", e)
+
+        print(title, savings, sale_price)
             
         print("Still alive 😅")
         await asyncio.sleep(300)
