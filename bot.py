@@ -76,9 +76,14 @@ def get_deals():
 # -----------------------------
 @client.event
 async def on_ready():
+    print("ON_READY FIRED")
     print(f"Logged in as {client.user}")
-    print("BOT READY - STARTING DEAL CHECK")
+
     channel = client.get_channel(CHANNEL_ID)
+
+    print("CHANNEL =", channel)
+
+    print("BOT READY - STARTING DEAL CHECK")
 
     while True:
         try:
