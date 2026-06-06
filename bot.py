@@ -45,6 +45,7 @@ seen_deals = load_seen()
 # GET DEALS
 # -----------------------------
 def get_deals():
+    print("GET_DEALS FUNCTION STARTED")
     api_key = os.getenv("ITAD_API_KEY")
 
     headers = {
@@ -73,6 +74,7 @@ def get_deals():
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
+    print("BOT READY - STARTING DEAL CHECK")
     channel = client.get_channel(CHANNEL_ID)
 
     while True:
