@@ -45,8 +45,27 @@ seen_deals = load_seen()
 # GET DEALS
 # -----------------------------
 def get_deals():
-    url = "https://www.cheapshark.com/api/1.0/deals?storeID=1&upperPrice=50"
-    return requests.get(url).json()
+    api_key = os.getenv("ITAD_API_KEY")
+
+    headers = {
+        "X-Api-Key": api_key
+    }
+
+    params = {
+        "country": "US",
+        "limit": 5
+    }
+
+    response = requests.get(
+        "https://api.isthereanydeal.com/deals/v2",
+        headers=headers,
+        params=params
+    )
+
+    print("Status:", response.status_code)
+    print(response.text[:1000])
+
+    return []
 
 # -----------------------------
 # BOT START
@@ -102,8 +121,6 @@ async def on_ready():
         except Exception as e:
             print("Error:", e)
 
-        print(title, savings, sale_price)
-            
         print("Still alive 😅")
         await asyncio.sleep(300)
 
