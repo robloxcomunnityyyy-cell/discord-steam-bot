@@ -1,4 +1,7 @@
 import os
+
+print("NEW VERSION LOADED")
+
 import discord
 import requests
 import asyncio
