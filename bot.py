@@ -67,12 +67,11 @@ def get_deals():
 
     print("API KEY LENGTH:", len(api_key))
     print("FIRST 5:", api_key[:5])
-    
     print("API KEY EXISTS:", bool(api_key))
 
     headers = {
-    "ITAD-API-Key": api_key
-}
+        "ITAD-API-Key": api_key
+    }
 
     params = {
         "country": "US",
@@ -86,11 +85,12 @@ def get_deals():
     )
 
     print("Status:", response.status_code)
+
     data = response.json()
 
-print("Deals received:", len(data["list"]))
+    print("Deals received:", len(data["list"]))
 
-return data["list"]
+    return data["list"]
 
 # -----------------------------
 # BOT START
