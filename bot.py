@@ -30,11 +30,16 @@ client = discord.Client(
     heartbeat_timeout=60
 )
 
-print("CLIENT CREATED")
+print("CLIENT CREATED", flush=True)
+
+async def test_task():
+    while True:
+        print("BACKGROUND TASK RUNNING", flush=True)
+        await asyncio.sleep(60)
 
 @client.event
 async def on_connect():
-    print("ON_CONNECT FIRED")
+    print("ON_CONNECT FIRED", flush=True)
 
 # -----------------------------
 # Persistent storage (NO REPEATS EVER)
@@ -85,7 +90,8 @@ def get_deals():
 # -----------------------------
 @client.event
 async def on_ready():
-    print("ON_READY FIRED")
+    asyncio.create_task(test_task())
+    print("ON_READY FIRED", flush=True)
 
     channel = client.get_channel(CHANNEL_ID)
 
@@ -150,7 +156,7 @@ async def on_resumed():
 async def on_error(event, *args, **kwargs):
     print("DISCORD ERROR:", event)
 
-print("TOKEN EXISTS:", bool(os.getenv("TOKEN")))
-print("CHANNEL ID:", CHANNEL_ID)
+print("TOKEN EXISTS:", bool(os.getenv("TOKEN")), flush=True)
+print("CHANNEL ID:", CHANNEL_ID, flush=True)
 
 client.run(os.getenv("TOKEN"))
