@@ -86,7 +86,6 @@ def get_deals():
 @client.event
 async def on_ready():
     print("ON_READY FIRED")
-    print(f"Logged in as {client.user}")
 
     channel = client.get_channel(CHANNEL_ID)
 
@@ -151,8 +150,7 @@ async def on_resumed():
 async def on_error(event, *args, **kwargs):
     print("DISCORD ERROR:", event)
 
-print("Registered events:", list(client.extra_events.keys()))
-print("Ready handler:", client.on_ready)
-print("Connect handler:", client.on_connect)
+print("TOKEN EXISTS:", bool(os.getenv("TOKEN")))
+print("CHANNEL ID:", CHANNEL_ID)
 
 client.run(os.getenv("TOKEN"))
