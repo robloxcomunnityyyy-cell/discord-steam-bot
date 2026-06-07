@@ -118,10 +118,10 @@ async def on_ready():
                     continue
 
                 title = game["title"]
-                savings = float(game["savings"])
-                normal_price = game["normalPrice"]
-                sale_price = game["salePrice"]
-                app_id = game["steamAppID"]
+                savings = game["deal"]["cut"]
+                normal_price = game["deal"]["regular"]["amount"]
+                sale_price = game["deal"]["price"]["amount"]
+                deal_url = game["deal"]["url"]
 
                 if not app_id or app_id == "0":
                     seen_deals.add(deal_id)
