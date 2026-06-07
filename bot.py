@@ -144,7 +144,15 @@ async def on_ready():
         await asyncio.sleep(300)
 
 @client.event
+async def on_resumed():
+    print("ON_RESUMED FIRED")
+
+@client.event
 async def on_error(event, *args, **kwargs):
     print("DISCORD ERROR:", event)
+
+print("Registered events:", list(client.extra_events.keys()))
+print("Ready handler:", client.on_ready)
+print("Connect handler:", client.on_connect)
 
 client.run(os.getenv("TOKEN"))
