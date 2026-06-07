@@ -64,6 +64,7 @@ seen_deals = load_seen()
 def get_deals():
     print("GET_DEALS FUNCTION STARTED")
     api_key = os.getenv("ITAD_API_KEY")
+    print("API KEY EXISTS:", bool(api_key))
 
     headers = {
         "X-Api-Key": api_key
