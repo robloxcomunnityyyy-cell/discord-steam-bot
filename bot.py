@@ -71,8 +71,8 @@ def get_deals():
     print("API KEY EXISTS:", bool(api_key))
 
     headers = {
-        "X-Api-Key": api_key
-    }
+    "ITAD-API-Key": api_key
+}
 
     params = {
         "country": "US",
