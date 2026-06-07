@@ -35,7 +35,7 @@ print("CLIENT CREATED", flush=True)
 async def test_task():
     while True:
         print("BACKGROUND TASK RUNNING", flush=True)
-        await asyncio.sleep(60)
+        await asyncio.sleep(300)
 
 @client.event
 async def on_connect():
