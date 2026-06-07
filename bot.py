@@ -111,7 +111,8 @@ async def on_ready():
             deals = get_deals()
 
             for game in deals:
-                deal_id = game["dealID"]
+                deal_id = game["id"]
+                print("GAME:", game["title"])
 
                 if deal_id in seen_deals:
                     continue
