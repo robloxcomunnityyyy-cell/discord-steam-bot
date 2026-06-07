@@ -25,7 +25,16 @@ Thread(target=run_web).start()
 CHANNEL_ID = 856527775069503530  # your channel ID
 
 intents = discord.Intents.default()
-client = discord.Client(intents=intents)
+client = discord.Client(
+    intents=intents,
+    heartbeat_timeout=60
+)
+
+print("CLIENT CREATED")
+
+@client.event
+async def on_connect():
+    print("ON_CONNECT FIRED")
 
 # -----------------------------
 # Persistent storage (NO REPEATS EVER)
