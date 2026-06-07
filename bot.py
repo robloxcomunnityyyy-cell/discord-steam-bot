@@ -134,4 +134,8 @@ async def on_ready():
         print("Still alive 😅")
         await asyncio.sleep(300)
 
+@client.event
+async def on_error(event, *args, **kwargs):
+    print("DISCORD ERROR:", event)
+
 client.run(os.getenv("TOKEN"))
