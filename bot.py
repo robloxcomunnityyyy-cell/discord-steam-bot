@@ -86,9 +86,11 @@ def get_deals():
     )
 
     print("Status:", response.status_code)
-    print(response.text[:1000])
+    data = response.json()
 
-    return []
+print("Deals received:", len(data["list"]))
+
+return data["list"]
 
 # -----------------------------
 # BOT START
