@@ -75,7 +75,7 @@ def get_deals():
 
     params = {
         "country": "US",
-        "limit": 5
+        "limit": 50
     }
 
     response = requests.get(
@@ -113,6 +113,7 @@ async def on_ready():
             for game in deals:
                 deal_id = game["id"]
                 print("GAME:", game["title"])
+                print(game)
 
                 if deal_id in seen_deals:
                     continue
