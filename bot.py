@@ -106,9 +106,21 @@ async def on_ready():
 
     print("BOT READY - STARTING DEAL CHECK")
 
-    while True:
-        try:
-            deals = get_deals()
+    deals = get_deals()
+
+for game in deals:
+    price = game["deal"]["price"]["amount"]
+
+    print(
+        game["title"],
+        "- Price:",
+        price,
+        "- Discount:",
+        game["deal"]["cut"]
+    )
+
+    if price == 0:
+        print("FREE GAME FOUND:", game["title"])
 
             for game in deals:
                 deal_id = game["id"]
