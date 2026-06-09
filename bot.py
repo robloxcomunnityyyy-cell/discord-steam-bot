@@ -116,7 +116,7 @@ async def deal_loop():
                 print(title, "- Price:", price, "- Discount:", discount)
 
                 # ✅ SAFE CHECK (free games)
-                if price <= 0.01:
+                if price <= 0.01 or discount >= 97:
 
                     # ⚠️ FIXED LINK (NO BROKEN STEAM PAGES)
                     steam_url = game["deal"]["url"]
