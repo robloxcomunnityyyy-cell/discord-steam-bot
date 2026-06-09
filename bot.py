@@ -112,11 +112,13 @@ async def deal_loop():
                 price = float(game["deal"]["price"]["amount"])
                 discount = float(game["deal"]["cut"])
                 normal_price = game["deal"]["regular"]["amount"]
+                
+                print("FOUND:", title, price, discount)
 
                 print(title, "- Price:", price, "- Discount:", discount)
 
                 # ✅ SAFE CHECK (free games)
-                if price <= 0.01 or discount >= 97:
+                if  discount >= 10:
 
                     # ⚠️ FIXED LINK (NO BROKEN STEAM PAGES)
                     steam_url = game["deal"]["url"]
