@@ -109,19 +109,17 @@ async def deal_loop():
                     continue
 
                 title = game["title"]
-                price = game["deal"]["price"]["amount"]
-                discount = game["deal"]["cut"]
+                price = float(game["deal"]["price"]["amount"])
+                discount = float(game["deal"]["cut"])
                 normal_price = game["deal"]["regular"]["amount"]
-                app_id = game["deal"]["url"]
 
                 print(title, "- Price:", price, "- Discount:", discount)
 
-                if not app_id or app_id == "0":
-                    seen_deals.add(deal_id)
-                    continue
+                # ✅ SAFE CHECK (free games)
+                if price <= 0.01:
 
-                if discount >= 60:
-                    steam_url = f"https://store.steampowered.com/app/{app_id}/"
+                    # ⚠️ FIXED LINK (NO BROKEN STEAM PAGES)
+                    steam_url = game["deal"]["url"]
 
                     embed = discord.Embed(
                         title=f"🔥 {title} is FREE (-{round(discount)}%)",
@@ -155,7 +153,7 @@ async def on_ready():
 
     channel = client.get_channel(CHANNEL_ID)
 
-    await channel.send("🤖 Bot funguje!")
+    await channel.send("🤖 BOT WORKS!")
 
     asyncio.create_task(deal_loop())
 
