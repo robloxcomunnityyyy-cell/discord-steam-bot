@@ -118,6 +118,10 @@ async def deal_loop():
             deals = get_deals()
 
             for game in deals:
+
+                if game.get("type") != "game":
+                    continue
+
                 deal_id = game["id"]
 
                 if deal_id in seen_deals:
@@ -129,17 +133,20 @@ async def deal_loop():
                 normal_price = game["deal"]["regular"]["amount"]
 
                 print("FOUND:", title, price, discount, flush=True)
-                print(title, "- Price:", price, "- Discount:", discount, flush=True)
 
-                # SAFE CHECK
                 if discount >= 10:
 
-                    steam_url = game["deal"]["url"]
+                    steam_appid = game.get("deal", {}).get("url")
+
+                    if not steam_appid or not steam_appid.isdigit():
+                        continue
+
+                    steam_url = f"https://store.steampowered.com/app/{steam_appid}/"
 
                     embed = discord.Embed(
-                        title=f"🔥 {title} is FREE (-{round(discount)}%)",
+                        title=f"🔥 {title} is {round(discount)}% OFF",
                         url=steam_url,
-                        description=f"~~${normal_price}~~ → **$0.00**"
+                        description=f"~~${normal_price}~~ → **${price}**"
                     )
 
                     embed.set_image(url=game.get("thumb", ""))
