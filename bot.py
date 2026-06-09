@@ -84,9 +84,15 @@ def get_deals():
 
     data = response.json()
 
-    print("Deals received:", len(data["list"]), flush=True)
+    print("RAW API RESPONSE TYPE:", type(data), flush=True)
+    print("RAW KEYS:", data.keys() if isinstance(data, dict) else "NOT A DICT", flush=True)
 
-    return data["list"]
+    # SAFE extraction
+    deals = data.get("list") or data.get("data") or data
+
+    print("Deals received:", len(deals), flush=True)
+
+    return deals
 
 # -----------------------------
 # LOOP
