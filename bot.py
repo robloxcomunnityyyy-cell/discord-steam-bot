@@ -108,68 +108,8 @@ async def on_ready():
 
     deals = get_deals()
 
-print("TEST")
-
 for game in deals:
-    price = game["deal"]["price"]["amount"]
-
-    print(
-        game["title"],
-        "- Price:",
-        price,
-        "- Discount:",
-        game["deal"]["cut"]
-    )
-
-    if price == 0:
-        print("FREE GAME FOUND:", game["title"])
-
-            for game in deals:
-                deal_id = game["id"]
-                print("GAME:", game["title"])
-                print(game)
-
-                if deal_id in seen_deals:
-                    continue
-
-                title = game["title"]
-                savings = game["deal"]["cut"]
-                normal_price = game["deal"]["regular"]["amount"]
-                sale_price = game["deal"]["price"]["amount"]
-                app_id = game["deal"]["url"]
-
-                if not app_id or app_id == "0":
-                    seen_deals.add(deal_id)
-                    continue
-
-                steam_url = f"https://store.steampowered.com/app/{app_id}/"
-
-                if float(sale_price) == 0:
-                    embed = discord.Embed(
-                        title=f"{title} is now -{round(savings)}%",
-                        url=steam_url,
-                        description=(
-                            f"💰 ~~${normal_price}~~ → **${sale_price}**\n"
-                            f"🔥 Huge Steam discount!"
-                        )
-                    )
-
-                    embed.set_image(url=game["thumb"])
-
-                    await channel.send(
-                        content="@everyone",
-                        embed=embed
-                    )
-
-                seen_deals.add(deal_id)
-
-            save_seen(seen_deals)
-
-        except Exception as e:
-            print("Error:", e)
-
-        print("Still alive 😅")
-        await asyncio.sleep(300)
+    print(game["title"])
 
 @client.event
 async def on_resumed():
