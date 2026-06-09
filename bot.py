@@ -78,9 +78,8 @@ def get_deals():
 }
 
     params = {
-        "country": "US",
-        "limit": 350
-    }
+    "country": "US"
+}
 
     response = requests.get(
         "https://api.isthereanydeal.com/deals/v2",
