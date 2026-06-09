@@ -22,27 +22,30 @@ def run_web():
 
 Thread(target=run_web).start()
 
-CHANNEL_ID = 856527775069503530  # your channel ID
+CHANNEL_ID = 856527775069503530
 
 intents = discord.Intents.default()
-client = discord.Client(
-    intents=intents,
-    heartbeat_timeout=60
-)
+client = discord.Client(intents=intents, heartbeat_timeout=60)
 
 print("CLIENT CREATED", flush=True)
 
-async def test_task():
-    while True:
-        print("BACKGROUND TASK RUNNING", flush=True)
-        await asyncio.sleep(300)
-
+# -----------------------------
+# EVENTS
+# -----------------------------
 @client.event
 async def on_connect():
     print("ON_CONNECT FIRED", flush=True)
 
+@client.event
+async def on_error(event, *args, **kwargs):
+    print("DISCORD ERROR:", event)
+
+@client.event
+async def on_resumed():
+    print("ON_RESUMED FIRED")
+
 # -----------------------------
-# Persistent storage (NO REPEATS EVER)
+# STORAGE
 # -----------------------------
 SEEN_FILE = "seen_deals.json"
 
@@ -59,19 +62,14 @@ def save_seen(seen):
 seen_deals = load_seen()
 
 # -----------------------------
-# GET DEALS
+# API
 # -----------------------------
 def get_deals():
     print("GET_DEALS FUNCTION STARTED")
+
     api_key = os.getenv("ITAD_API_KEY")
 
-    print("API KEY LENGTH:", len(api_key))
-    print("FIRST 5:", api_key[:5])
-    print("API KEY EXISTS:", bool(api_key))
-
-    headers = {
-        "ITAD-API-Key": api_key
-    }
+    headers = {"ITAD-API-Key": api_key}
 
     params = {
         "country": "US",
@@ -84,8 +82,6 @@ def get_deals():
         params=params
     )
 
-    print("Status:", response.status_code)
-
     data = response.json()
 
     print("Deals received:", len(data["list"]))
@@ -93,32 +89,75 @@ def get_deals():
     return data["list"]
 
 # -----------------------------
-# BOT START
+# LOOP
 # -----------------------------
-@client.event
-async def on_ready():
-    asyncio.create_task(test_task())
-    print("ON_READY FIRED", flush=True)
+async def deal_loop():
+    await client.wait_until_ready()
 
     channel = client.get_channel(CHANNEL_ID)
 
-    print("CHANNEL =", channel)
+    while not client.is_closed():
+        try:
+            print("Checking deals...")
 
-    print("BOT READY - STARTING DEAL CHECK")
+            deals = get_deals()
 
-    deals = get_deals()
+            for game in deals:
+                deal_id = game["id"]
 
-for game in deals:
-    print(game["title"])
+                if deal_id in seen_deals:
+                    continue
 
+                title = game["title"]
+                price = game["deal"]["price"]["amount"]
+                discount = game["deal"]["cut"]
+                normal_price = game["deal"]["regular"]["amount"]
+                app_id = game["deal"]["url"]
+
+                print(title, "- Price:", price, "- Discount:", discount)
+
+                if not app_id or app_id == "0":
+                    seen_deals.add(deal_id)
+                    continue
+
+                if float(price) == 0:
+                    steam_url = f"https://store.steampowered.com/app/{app_id}/"
+
+                    embed = discord.Embed(
+                        title=f"🔥 {title} is FREE (-{round(discount)}%)",
+                        url=steam_url,
+                        description=f"~~${normal_price}~~ → **$0.00**"
+                    )
+
+                    embed.set_image(url=game.get("thumb", ""))
+
+                    await channel.send(
+                        content="@everyone",
+                        embed=embed
+                    )
+
+                seen_deals.add(deal_id)
+
+            save_seen(seen_deals)
+
+        except Exception as e:
+            print("ERROR:", e)
+
+        print("Still alive 😅")
+        await asyncio.sleep(300)
+
+# -----------------------------
+# READY
+# -----------------------------
 @client.event
-async def on_resumed():
-    print("ON_RESUMED FIRED")
+async def on_ready():
+    print("ON_READY FIRED", flush=True)
+    asyncio.create_task(deal_loop())
+    print("BOT READY - DEAL LOOP STARTED")
 
-@client.event
-async def on_error(event, *args, **kwargs):
-    print("DISCORD ERROR:", event)
-
+# -----------------------------
+# RUN
+# -----------------------------
 print("TOKEN EXISTS:", bool(os.getenv("TOKEN")), flush=True)
 print("CHANNEL ID:", CHANNEL_ID, flush=True)
 
