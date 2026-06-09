@@ -38,11 +38,11 @@ async def on_connect():
 
 @client.event
 async def on_error(event, *args, **kwargs):
-    print("DISCORD ERROR:", event)
+    print("DISCORD ERROR:", event, flush=True)
 
 @client.event
 async def on_resumed():
-    print("ON_RESUMED FIRED")
+    print("ON_RESUMED FIRED", flush=True)
 
 # -----------------------------
 # STORAGE
@@ -65,7 +65,7 @@ seen_deals = load_seen()
 # API
 # -----------------------------
 def get_deals():
-    print("GET_DEALS FUNCTION STARTED")
+    print("GET_DEALS FUNCTION STARTED", flush=True)
 
     api_key = os.getenv("ITAD_API_KEY")
 
@@ -84,7 +84,7 @@ def get_deals():
 
     data = response.json()
 
-    print("Deals received:", len(data["list"]))
+    print("Deals received:", len(data["list"]), flush=True)
 
     return data["list"]
 
@@ -98,7 +98,7 @@ async def deal_loop():
 
     while not client.is_closed():
         try:
-            print("Checking deals...")
+            print("Checking deals...", flush=True)
 
             deals = get_deals()
 
@@ -112,15 +112,13 @@ async def deal_loop():
                 price = float(game["deal"]["price"]["amount"])
                 discount = float(game["deal"]["cut"])
                 normal_price = game["deal"]["regular"]["amount"]
-                
-                print("FOUND:", title, price, discount)
 
-                print(title, "- Price:", price, "- Discount:", discount)
+                print("FOUND:", title, price, discount, flush=True)
+                print(title, "- Price:", price, "- Discount:", discount, flush=True)
 
-                # ✅ SAFE CHECK (free games)
-                if  discount >= 10:
+                # SAFE CHECK
+                if discount >= 10:
 
-                    # ⚠️ FIXED LINK (NO BROKEN STEAM PAGES)
                     steam_url = game["deal"]["url"]
 
                     embed = discord.Embed(
@@ -141,9 +139,9 @@ async def deal_loop():
             save_seen(seen_deals)
 
         except Exception as e:
-            print("ERROR:", e)
+            print("ERROR:", e, flush=True)
 
-        print("Still alive 😅")
+        print("Still alive 😅", flush=True)
         await asyncio.sleep(300)
 
 # -----------------------------
@@ -159,7 +157,7 @@ async def on_ready():
 
     asyncio.create_task(deal_loop())
 
-    print("BOT READY - DEAL LOOP STARTED")
+    print("STARTING DEAL LOOP...", flush=True)
 
 # -----------------------------
 # RUN
