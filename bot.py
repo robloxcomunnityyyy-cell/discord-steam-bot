@@ -73,7 +73,7 @@ def get_deals():
 
     params = {
         "country": "US",
-        "limit": 50
+        "limit": 350
     }
 
     response = requests.get(
