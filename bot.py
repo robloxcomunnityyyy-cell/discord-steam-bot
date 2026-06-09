@@ -69,7 +69,13 @@ def get_deals():
 
     api_key = os.getenv("ITAD_API_KEY")
 
-    headers = {"ITAD-API-Key": api_key}
+    if not api_key:
+        print("ERROR: Missing API key", flush=True)
+        return []
+
+    headers = {
+    "ITAD-API-Key": api_key
+}
 
     params = {
         "country": "US",
@@ -82,18 +88,22 @@ def get_deals():
         params=params
     )
 
-    data = response.json()
+    print("STATUS:", response.status_code, flush=True)
+    print("RAW TEXT:", response.text[:300], flush=True)
 
-    print("RAW API RESPONSE TYPE:", type(data), flush=True)
+    try:
+        data = response.json()
+    except Exception as e:
+        print("JSON ERROR:", e, flush=True)
+        return []
+
     print("RAW KEYS:", data.keys() if isinstance(data, dict) else "NOT A DICT", flush=True)
 
-    # SAFE extraction
-    deals = data.get("list") or data.get("data") or data
+    deals = data.get("list") or data.get("data") or []
 
     print("Deals received:", len(deals), flush=True)
 
     return deals
-
 # -----------------------------
 # LOOP
 # -----------------------------
