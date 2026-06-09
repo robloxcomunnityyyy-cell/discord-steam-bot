@@ -152,7 +152,13 @@ async def deal_loop():
 @client.event
 async def on_ready():
     print("ON_READY FIRED", flush=True)
+
+    channel = client.get_channel(CHANNEL_ID)
+
+    await channel.send("🤖 Bot funguje!")
+
     asyncio.create_task(deal_loop())
+
     print("BOT READY - DEAL LOOP STARTED")
 
 # -----------------------------
