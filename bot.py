@@ -120,7 +120,7 @@ async def deal_loop():
                     seen_deals.add(deal_id)
                     continue
 
-                if float(price) == 0:
+                if discount >= 60:
                     steam_url = f"https://store.steampowered.com/app/{app_id}/"
 
                     embed = discord.Embed(
