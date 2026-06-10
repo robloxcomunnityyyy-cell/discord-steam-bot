@@ -82,46 +82,38 @@ async def deal_loop():
 
     while not client.is_closed():
         try:
-            print("Checking deals...")
-
             deals = get_deals()
 
             for game in deals:
+                deal_id = game["id"]
+
+                if deal_id in seen_deals:
+                    continue
+
+                seen_deals.add(deal_id)
 
                 if game.get("type") != "game":
                     continue
 
-                deal_id = game["id"]
-                if deal_id in seen_deals:
+                discount = float(game["deal"]["cut"])
+
+                if discount < 71:
                     continue
 
                 title = game["title"]
-                price = float(game["deal"]["price"]["amount"])
-                discount = float(game["deal"]["cut"])
-                normal_price = game["deal"]["regular"]["amount"]
-
-                print("FOUND:", title, price, discount, flush=True)
-
-                print("DISCOUNT CHECK:", title, discount, flush=True)
-                
-                if discount < 70:
-                    continue
-
-                print("SENDING:", title, discount, flush=True)
-                # ✅ SAFE OFFICIAL LINK (THIS IS THE IMPORTANT FIX)
-                steam_url = game["deal"]["url"]
+                price = game["deal"]["price"]["amount"]
+                normal = game["deal"]["regular"]["amount"]
+                url = game["deal"]["url"]
 
                 embed = discord.Embed(
                     title=f"🔥 {title} is {round(discount)}% OFF",
-                    url=steam_url,
-                    description=f"~~${normal_price}~~ → **${price}**"
+                    url=url,
+                    description=f"~~${normal}~~ → **${price}**"
                 )
 
                 embed.set_image(url=game.get("assets", {}).get("boxart", ""))
 
                 await channel.send(content="@everyone", embed=embed)
-
-                seen_deals.add(deal_id)
 
             save_seen(seen_deals)
 
