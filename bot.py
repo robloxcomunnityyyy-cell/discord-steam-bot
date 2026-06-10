@@ -74,28 +74,20 @@ async def deal_loop():
 
     seen_deals.add(deal_id)
 
-                if game.get("type") != "game":
-                    continue
+    title = game["title"]
+    price = game["deal"]["price"]["amount"]
+    normal = game["deal"]["regular"]["amount"]
+    url = game["deal"]["url"]
 
-                discount = float(game["deal"]["cut"])
+    embed = discord.Embed(
+        title=f"🔥 {title} is {round(discount)}% OFF",
+        url=url,
+        description=f"~~${normal}~~ → **${price}**"
+    )
 
-                if discount < 71:
-                    continue
+    embed.set_image(url=game.get("assets", {}).get("boxart", ""))
 
-                title = game["title"]
-                price = game["deal"]["price"]["amount"]
-                normal = game["deal"]["regular"]["amount"]
-                url = game["deal"]["url"]
-
-                embed = discord.Embed(
-                    title=f"🔥 {title} is {round(discount)}% OFF",
-                    url=url,
-                    description=f"~~${normal}~~ → **${price}**"
-                )
-
-                embed.set_image(url=game.get("assets", {}).get("boxart", ""))
-
-                await channel.send(content="@everyone", embed=embed)
+    await channel.send(content="@everyone", embed=embed)
 
             save_seen(seen_deals)
 
