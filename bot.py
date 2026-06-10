@@ -60,12 +60,19 @@ async def deal_loop():
 
             for game in deals:
 
-                deal_id = game["id"]
+    if game.get("type") != "game":
+        continue
 
-                if deal_id in seen_deals:
-                    continue
+    discount = float(game["deal"]["cut"])
+    if discount < 71:
+        continue
 
-                seen_deals.add(deal_id)
+    deal_id = game["id"]
+
+    if deal_id in seen_deals:
+        continue
+
+    seen_deals.add(deal_id)
 
                 if game.get("type") != "game":
                     continue
