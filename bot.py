@@ -88,28 +88,27 @@ def get_deals():
 # ---------------- DEAL LOOP ----------------
 async def deal_loop():
     await client.wait_until_ready()
-
     channel = client.get_channel(CHANNEL_ID)
-    if channel is None:
-        print("Channel not found!")
-        return
 
     while not client.is_closed():
         try:
-            deals = get_deals()
-            print("DEALS FOUND:", len(deals), flush=True)
+            deals = await get_deals()
+
+            current_ids = set()
 
             for game in deals:
-
                 if game.get("type") != "game":
                     continue
 
                 deal_id = game["id"]
+                current_ids.add(deal_id)
 
+                # only process if new
                 if deal_id in seen_deals:
                     continue
 
                 discount = float(game["deal"]["cut"])
+
                 if discount < 10:
                     continue
 
@@ -126,14 +125,14 @@ async def deal_loop():
                     description=f"~~${normal}~~ → **${price}**"
                 )
 
-                embed.set_image(url=game.get("assets", {}).get("boxart", ""))
-
                 await channel.send(content="@everyone", embed=embed)
 
             save_seen(seen_deals)
 
+            print(f"Checked {len(deals)} deals, new seen total: {len(seen_deals)}")
+
         except Exception as e:
-            print("LOOP ERROR:", e)
+            print("ERROR:", repr(e))
 
         await asyncio.sleep(300)
 
