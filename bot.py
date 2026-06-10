@@ -54,9 +54,10 @@ async def deal_loop():
 
     while not client.is_closed():
         try:
-            deals = get_deals()
+            deals = get_deals()  # ✅ THIS WAS MISSING
 
             for game in deals:
+
                 deal_id = game["id"]
 
                 if deal_id in seen_deals:
