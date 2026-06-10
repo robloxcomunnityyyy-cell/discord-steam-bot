@@ -90,7 +90,7 @@ async def deal_loop():
                     continue
 
                 discount = float(game["deal"]["cut"])
-                if discount < 71:
+                if discount < 10:
                     continue
 
                 seen_deals.add(deal_id)
