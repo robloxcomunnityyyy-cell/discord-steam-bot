@@ -50,20 +50,40 @@ seen_deals = load_seen()
 def get_deals():
     api_key = os.getenv("ITAD_API_KEY")
     if not api_key:
-        print("Missing ITAD API key")
+        print("Missing API key")
         return []
 
-    try:
-        r = requests.get(
-            "https://api.isthereanydeal.com/deals/v2",
-            headers={"ITAD-API-Key": api_key},
-            params={"country": "US", "limit": 50},
-            timeout=15
-        )
-        return r.json().get("list", [])
-    except Exception as e:
-        print("API ERROR:", e)
-        return []
+    all_deals = []
+    offset = 0
+
+    while True:
+        try:
+            r = requests.get(
+                "https://api.isthereanydeal.com/deals/v2",
+                headers={"ITAD-API-Key": api_key},
+                params={
+                    "country": "US",
+                    "limit": 100,
+                    "offset": offset
+                },
+                timeout=15
+            )
+
+            data = r.json()
+            batch = data.get("list", [])
+
+            all_deals.extend(batch)
+
+            if not data.get("hasMore"):
+                break
+
+            offset = data.get("nextOffset", 0)
+
+        except Exception as e:
+            print("API ERROR:", e)
+            break
+
+    return all_deals
 
 # ---------------- DEAL LOOP ----------------
 async def deal_loop():
