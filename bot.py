@@ -37,44 +37,16 @@ seen_deals = load_seen()
 
 def get_deals():
     api_key = os.getenv("ITAD_API_KEY")
-
     if not api_key:
-        print("Missing API key", flush=True)
         return []
 
-    all_deals = []
-    offset = 0
+    r = requests.get(
+        "https://api.isthereanydeal.com/deals/v2",
+        headers={"ITAD-API-Key": api_key},
+        params={"country": "US", "limit": 50}
+    )
 
-    while True:
-
-        r = requests.get(
-            "https://api.isthereanydeal.com/deals/v2",
-            headers={"ITAD-API-Key": api_key},
-            params={
-                "country": "US",
-                "limit": 50,
-                "offset": offset
-            }
-        )
-
-        data = r.json()
-
-        deals = data.get("list", [])
-        all_deals.extend(deals)
-
-        print(
-            f"Fetched {len(deals)} deals (total {len(all_deals)})",
-            flush=True
-        )
-
-        if not data.get("hasMore"):
-            break
-
-        offset = data.get("nextOffset", 0)
-
-    print("TOTAL DEALS FOUND:", len(all_deals), flush=True)
-
-    return all_deals
+    return r.json().get("list", [])
 
 async def deal_loop():
     await client.wait_until_ready()
