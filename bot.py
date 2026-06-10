@@ -56,6 +56,8 @@ async def deal_loop():
         try:
             deals = get_deals()  # ✅ THIS WAS MISSING
 
+            print("DEALS FOUND:", len(deals), flush=True)
+
             for game in deals:
 
                 deal_id = game["id"]
