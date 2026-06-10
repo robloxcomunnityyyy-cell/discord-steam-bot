@@ -1,41 +1,38 @@
 import os
-print("NEW VERSION LOADED")
-
 import discord
+import requests
 import asyncio
 import json
-import aiohttp
 from flask import Flask
 from threading import Thread
 
-# ---------------- Flask keepalive ----------------
+print("NEW VERSION LOADED")
+
+# ---------------- Flask keep-alive ----------------
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return "Discord Steam Bot is running!"
 
-Thread(
-    target=lambda: app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-).start()
+Thread(target=lambda: app.run(
+    host="0.0.0.0",
+    port=int(os.environ.get("PORT", 10000))
+)).start()
 
-# ---------------- CONFIG ----------------
+# ---------------- Discord setup ----------------
 CHANNEL_ID = 856527775069503530
-API_URL = "https://api.isthereanydeal.com/deals/v2"
-
-SEEN_FILE = "seen_deals.json"
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents, heartbeat_timeout=60)
 
-# ---------------- STATE ----------------
+# ---------------- Memory tracking ----------------
+SEEN_FILE = "seen_deals.json"
+
 def load_seen():
     if os.path.exists(SEEN_FILE):
-        try:
-            with open(SEEN_FILE, "r") as f:
-                return set(json.load(f))
-        except:
-            return set()
+        with open(SEEN_FILE, "r") as f:
+            return set(json.load(f))
     return set()
 
 def save_seen(seen):
@@ -44,93 +41,97 @@ def save_seen(seen):
 
 seen_deals = load_seen()
 
-# ---------------- FETCH DEALS (NON-BLOCKING) ----------------
-async def get_deals(session):
+# ---------------- API ----------------
+def get_deals():
     api_key = os.getenv("ITAD_API_KEY")
     if not api_key:
         return []
 
-    headers = {"ITAD-API-Key": api_key}
-    params = {"country": "US", "limit": 50}
-
     try:
-        async with session.get(API_URL, headers=headers, params=params, timeout=30) as r:
-            data = await r.json()
-            return data.get("list", [])
+        r = requests.get(
+            "https://api.isthereanydeal.com/deals/v2",
+            headers={"ITAD-API-Key": api_key},
+            params={"country": "US", "limit": 50},
+            timeout=20
+        )
+
+        return r.json().get("list", [])
+
     except Exception as e:
         print("API ERROR:", e)
         return []
 
-# ---------------- MAIN LOOP ----------------
+# ---------------- Main loop ----------------
 async def deal_loop():
     await client.wait_until_ready()
     channel = client.get_channel(CHANNEL_ID)
 
-    async with aiohttp.ClientSession() as session:
-        while not client.is_closed():
-            try:
-                deals = await get_deals(session)
+    while not client.is_closed():
+        try:
+            deals = get_deals()
 
-                print("DEALS FOUND:", len(deals))
+            print("DEALS FOUND:", len(deals), flush=True)
 
-                new_count = 0
+            new_count = 0
 
-                for game in deals:
-                    deal_id = game.get("id")
-                    if not deal_id:
-                        continue
+            for game in deals:
 
-                    # already seen → skip
-                    if deal_id in seen_deals:
-                        continue
+                deal_id = game.get("id")
+                if not deal_id:
+                    continue
 
-                    seen_deals.add(deal_id)
+                # skip already processed
+                if deal_id in seen_deals:
+                    continue
 
-                    if game.get("type") != "game":
-                        continue
+                seen_deals.add(deal_id)
 
-                    discount = float(game["deal"]["cut"])
-                    if discount < 10:   # <-- change threshold here
-                        continue
+                if game.get("type") != "game":
+                    continue
 
-                    title = game["title"]
-                    price = game["deal"]["price"]["amount"]
-                    normal = game["deal"]["regular"]["amount"]
-                    url = game["deal"]["url"]
+                discount = float(game["deal"]["cut"])
+                if discount < 10:   # <-- change threshold here
+                    continue
 
-                    embed = discord.Embed(
-                        title=f"🔥 {title} is {round(discount)}% OFF",
-                        url=url,
-                        description=f"~~${normal}~~ → **${price}**"
-                    )
+                title = game["title"]
+                price = game["deal"]["price"]["amount"]
+                normal = game["deal"]["regular"]["amount"]
+                url = game["deal"]["url"]
 
-                    boxart = game.get("assets", {}).get("boxart")
-                    if boxart:
-                        embed.set_image(url=boxart)
+                embed = discord.Embed(
+                    title=f"🔥 {title} is {round(discount)}% OFF",
+                    url=url,
+                    description=f"~~${normal}~~ → **${price}**"
+                )
 
-                    await channel.send(content="@everyone", embed=embed)
-                    new_count += 1
+                img = game.get("assets", {}).get("boxart")
+                if img:
+                    embed.set_image(url=img)
 
-                if new_count > 0:
-                    print(f"Sent {new_count} new deals")
+                await channel.send(content="@everyone", embed=embed)
 
+                new_count += 1
+
+            if new_count > 0:
                 save_seen(seen_deals)
+                print(f"Sent {new_count} new deals")
 
-            except Exception as e:
-                print("LOOP ERROR:", e)
+        except Exception as e:
+            print("LOOP ERROR:", e)
 
-            # IMPORTANT: 5 minute interval
-            await asyncio.sleep(300)
+        await asyncio.sleep(300)  # 5 minutes
 
-# ---------------- READY ----------------
+
+# ---------------- Events ----------------
 @client.event
 async def on_ready():
     print("ON_READY FIRED")
-
     channel = client.get_channel(CHANNEL_ID)
+
     if channel:
-        await channel.send("🤖 Bot is online!")
+        await channel.send("🤖 BOT ONLINE!")
 
     asyncio.create_task(deal_loop())
 
+# ---------------- Run ----------------
 client.run(os.getenv("TOKEN"))
