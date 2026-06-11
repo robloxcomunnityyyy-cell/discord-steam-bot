@@ -105,7 +105,7 @@ async def deal_loop():
                     continue
 
                 discount = float(game["deal"]["cut"])
-                if discount < 10:   # <-- change threshold here
+                if discount < 99:   # <-- change threshold here
                     continue
 
                 title = game["title"]
