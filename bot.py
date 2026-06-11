@@ -72,6 +72,9 @@ async def deal_loop():
 
             print("DEALS FOUND:", len(deals), flush=True)
 
+            for game in deals[:10]:
+                print(game.get("title"))
+
             new_count = 0
 
             for game in deals:
@@ -79,6 +82,8 @@ async def deal_loop():
                 deal_id = game.get("id")
                 if not deal_id:
                     continue
+
+                # rest of your code...
 
                 # skip already processed
                 if deal_id in seen_deals:
