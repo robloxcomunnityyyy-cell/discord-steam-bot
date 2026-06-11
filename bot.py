@@ -91,10 +91,12 @@ async def deal_loop():
                 if not deal_id:
                     continue
 
-                # rest of your code...
+                if game.get("type") != "game":
+                    continue
 
-                # skip already processed
-                if deal_id in seen_deals:
+                deal_key = deal_id
+
+                if deal_key in seen_deals:
                     continue
 
                 seen_deals.add(deal_key)
