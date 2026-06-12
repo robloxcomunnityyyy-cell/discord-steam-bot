@@ -49,7 +49,7 @@ def get_deals():
 
     all_deals = []
 
-    for page in [0, 1, 2]:  # 3 pages = ~150 deals
+    for page in [0, 1, 2, 3, 4, 5]:  # 3 pages = ~150 deals
         try:
             r = requests.get(
                 "https://api.isthereanydeal.com/deals/v2",
@@ -94,12 +94,14 @@ async def deal_loop():
                 if game.get("type") != "game":
                     continue
 
-                deal_key = deal_id
+                price = game["deal"]["price"]["amount"]
+                deal_key = f"{deal_id}_{price}"
+
 
                 if deal_id in seen_deals:
                     continue
 
-                seen_deals.add(deal_id)
+                deal_key = f"{game['id']}_{game['deal']['cut']}"
 
                 if game.get("type") != "game":
                     continue
@@ -134,7 +136,7 @@ async def deal_loop():
         except Exception as e:
             print("LOOP ERROR:", e)
 
-        await asyncio.sleep(300)  # 5 minutes
+        await asyncio.sleep(180)  # 3 minutes
 
 
 # ---------------- Events ----------------
