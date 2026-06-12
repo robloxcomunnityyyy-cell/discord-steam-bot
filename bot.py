@@ -80,8 +80,9 @@ async def deal_loop():
 
             print("DEALS FOUND:", len(deals), flush=True)
 
-            for game in deals[:10]:
-                print(game.get("title"))
+            print("FIRST:", deals[0].get("title"))
+            print("MIDDLE:", deals[150].get("title"))
+            print("LAST:", deals[-1].get("title"))
 
             new_count = 0
 
