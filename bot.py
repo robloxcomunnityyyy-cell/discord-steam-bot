@@ -96,10 +96,10 @@ async def deal_loop():
 
                 deal_key = deal_id
 
-                if deal_key in seen_deals:
+                if deal_id in seen_deals:
                     continue
 
-                seen_deals.add(deal_key)
+                seen_deals.add(deal_id)
 
                 if game.get("type") != "game":
                     continue
