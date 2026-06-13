@@ -71,6 +71,7 @@ def get_deals():
 
     except Exception as e:
         print("POST API ERROR:", e)
+        print("RAW RESPONSE:", r.text[:500])
         return []
 # ---------------- Main loop ----------------
 async def deal_loop():
@@ -82,11 +83,9 @@ async def deal_loop():
             deals = get_deals()
 
             print("DEALS FOUND:", len(deals), flush=True)
-
-            print("FIRST:", deals[0].get("title"))
-            print("MIDDLE:", deals[150].get("title"))
-            print("LAST:", deals[-1].get("title"))
-
+            for i, game in enumerate(deals[:5]):
+                print(i, game.get("title"))
+    
             new_count = 0
 
             for game in deals:
