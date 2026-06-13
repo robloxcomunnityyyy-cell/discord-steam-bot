@@ -47,28 +47,31 @@ def get_deals():
     if not api_key:
         return []
 
-    all_deals = []
+    try:
+        r = requests.post(
+            "https://api.isthereanydeal.com/deals/v2",
+            headers={"ITAD-API-Key": api_key},
+            json={
+                "country": "US",
+                "offset": 0,
+                "limit": 150,
+                "filter": {
+                    "type": ["game"],
+                    "cut": {
+                        "min": 100,
+                        "max": 100
+                    },
+                    "notPreOrder": True
+                }
+            },
+            timeout=20
+        )
 
-    for page in [0, 1, 2, 3, 4, 5]:  # 3 pages = ~150 deals
-        try:
-            r = requests.get(
-                "https://api.isthereanydeal.com/deals/v2",
-                headers={"ITAD-API-Key": api_key},
-                params={
-                    "country": "US",
-                    "limit": 50,
-                    "offset": page * 50
-                },
-                timeout=20
-            )
+        return r.json().get("list", [])
 
-            data = r.json().get("list", [])
-            all_deals.extend(data)
-
-        except Exception as e:
-            print("PAGE ERROR:", e)
-
-    return all_deals
+    except Exception as e:
+        print("POST API ERROR:", e)
+        return []
 # ---------------- Main loop ----------------
 async def deal_loop():
     await client.wait_until_ready()
