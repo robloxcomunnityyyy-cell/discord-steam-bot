@@ -58,7 +58,7 @@ def get_deals():
                 "filter": {
                     "type": ["game"],
                     "cut": {
-                        "min": 100,
+                        "min": 90,
                         "max": 100
                     },
                     "notPreOrder": True
@@ -110,7 +110,7 @@ async def deal_loop():
                     continue
 
                 discount = float(game["deal"]["cut"])
-                if discount < 99:   # <-- change threshold here
+                if discount < 90:   # <-- change threshold here
                     continue
 
                 title = game["title"]
