@@ -82,7 +82,7 @@ def get_deals():
         print(f"📡 STATUS CODE: {r.status_code}")
 
         if r.status_code != 200:
-            print("❌ API ERROR RESPONSE:")
+            print("❌ API ERROR:")
             print(r.text[:300])
             return []
 
@@ -100,15 +100,11 @@ def get_deals():
 
 # ---------------- LOOP ----------------
 async def deal_loop():
-    print("🟢 LOOP INITIALIZED")
-    await client.wait_until_ready()
-    channel = client.get_channel(CHANNEL_ID)
+    print("🟢 LOOP STARTED")
 
-    if not channel:
-        print("❌ CHANNEL NOT FOUND")
-        return
+    channel = await client.fetch_channel(CHANNEL_ID)
 
-    while not client.is_closed():
+    while True:
         try:
             print("\n🔁 NEW CYCLE STARTED")
 
@@ -171,7 +167,7 @@ async def deal_loop():
                 save_seen(seen_deals)
                 print(f"💾 SAVED {new_count} NEW DEALS")
 
-            print("💤 CYCLE COMPLETE - SLEEPING 180s")
+            print("💤 SLEEPING 180s")
 
         except Exception:
             print("❌ LOOP CRASHED:")
@@ -181,18 +177,20 @@ async def deal_loop():
 
 # ---------------- EVENTS ----------------
 @client.event
+async def setup_hook():
+    print("🧠 SETUP HOOK RUNNING")
+    client.loop.create_task(deal_loop())
+
+@client.event
 async def on_ready():
     print("🤖 DISCORD CONNECTED")
     print(f"Logged in as: {client.user}")
 
-    channel = client.get_channel(CHANNEL_ID)
-
-    if channel:
+    try:
+        channel = await client.fetch_channel(CHANNEL_ID)
         await channel.send("🤖 Bot online!")
+    except Exception as e:
+        print("❌ FAILED TO SEND START MESSAGE:", e)
 
-    # IMPORTANT: start loop ONLY after ready
-    asyncio.create_task(deal_loop())
-
-    print("🟢 LOOP TASK CREATED")
 # ---------------- RUN ----------------
 client.run(os.getenv("TOKEN"))
