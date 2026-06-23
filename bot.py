@@ -49,6 +49,8 @@ def get_deals():
 
     try:
         r = requests.post(
+            print(r.status_code)
+            print("RESPONSE:", r.text[:500], flush=True)
             "https://api.isthereanydeal.com/deals/v2",
             headers={"ITAD-API-Key": api_key},
             json={
