@@ -49,8 +49,6 @@ def get_deals():
 
     try:
         r = requests.post(
-            print(r.status_code)
-            print("RESPONSE:", r.text[:500], flush=True)
             "https://api.isthereanydeal.com/deals/v2",
             headers={"ITAD-API-Key": api_key},
             json={
@@ -69,14 +67,14 @@ def get_deals():
             timeout=20
         )
 
-        return r.json().get("list", [])
-        
-        print(r.status_code)
-        print(r.text[:1000])
+        print("STATUS:", r.status_code)
+        print("RESPONSE SAMPLE:", r.text[:300])
+
+        data = r.json()
+        return data.get("list", [])
 
     except Exception as e:
         print("POST API ERROR:", e)
-        print("RAW RESPONSE:", r.text[:500])
         return []
 # ---------------- Main loop ----------------
 async def deal_loop():
