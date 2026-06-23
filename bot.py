@@ -5,10 +5,11 @@ import asyncio
 import json
 from flask import Flask
 from threading import Thread
+import traceback
 
-print("BOT STARTING...")
+print("🚀 BOT FILE LOADED")
 
-# ---------------- KEEP ALIVE SERVER ----------------
+# ---------------- KEEP ALIVE ----------------
 app = Flask(__name__)
 
 @app.route("/")
@@ -26,7 +27,7 @@ CHANNEL_ID = 856527775069503530
 intents = discord.Intents.default()
 client = discord.Client(intents=intents, heartbeat_timeout=60)
 
-# ---------------- SEEN STORAGE ----------------
+# ---------------- STORAGE ----------------
 SEEN_FILE = "seen_deals.json"
 
 def load_seen():
@@ -46,26 +47,25 @@ seen_deals = load_seen()
 
 # ---------------- STORE FILTER ----------------
 def is_allowed_store(game):
-    """
-    Only allow Steam and Epic Games Store deals
-    """
-    try:
-        store = game.get("deal", {}).get("store", {}).get("name", "")
-        store = store.lower()
+    store = game.get("deal", {}).get("store", {}).get("name", "")
+    store = store.lower()
 
-        return (
-            "steam" in store or
-            "epic" in store
-        )
-    except:
-        return False
+    allowed = ("steam" in store) or ("epic" in store)
+
+    if not allowed:
+        print(f"🚫 SKIP STORE: {store}")
+
+    return allowed
 
 # ---------------- API ----------------
 def get_deals():
     api_key = os.getenv("ITAD_API_KEY")
+
     if not api_key:
-        print("Missing ITAD API KEY")
+        print("❌ Missing API key")
         return []
+
+    print("📡 REQUESTING API...")
 
     try:
         r = requests.get(
@@ -79,54 +79,75 @@ def get_deals():
             timeout=20
         )
 
+        print(f"📡 STATUS CODE: {r.status_code}")
+
         if r.status_code != 200:
-            print("API ERROR:", r.status_code, r.text[:200])
+            print("❌ API ERROR RESPONSE:")
+            print(r.text[:300])
             return []
 
         data = r.json()
-        return data.get("list", [])
+        deals = data.get("list", [])
+
+        print(f"📦 RAW DEALS RECEIVED: {len(deals)}")
+
+        return deals
 
     except Exception as e:
-        print("REQUEST ERROR:", e)
+        print("❌ REQUEST FAILED:")
+        print(e)
         return []
 
-# ---------------- BOT LOOP ----------------
+# ---------------- LOOP ----------------
 async def deal_loop():
     await client.wait_until_ready()
+
+    print("🟢 LOOP INITIALIZED")
+
     channel = client.get_channel(CHANNEL_ID)
+
+    if not channel:
+        print("❌ CHANNEL NOT FOUND")
+        return
 
     while not client.is_closed():
         try:
+            print("\n🔁 NEW CYCLE STARTED")
+
             deals = get_deals()
 
-            print("DEALS FOUND:", len(deals))
+            print(f"📊 DEALS FOUND THIS CYCLE: {len(deals)}")
 
             new_count = 0
 
-            for game in deals:
+            for i, game in enumerate(deals):
 
                 deal_id = game.get("id")
+
                 if not deal_id:
+                    print(f"⚠️ SKIP NO ID [{i}]")
                     continue
 
-                # skip duplicates
                 if deal_id in seen_deals:
+                    print(f"🔁 ALREADY SEEN: {deal_id}")
                     continue
 
-                # store filter (Steam + Epic only)
                 if not is_allowed_store(game):
                     continue
 
                 try:
                     discount = float(game["deal"]["cut"])
                 except:
+                    print("⚠️ BAD DISCOUNT DATA")
                     continue
 
-                # 90%+ only
+                print(f"🎮 {game.get('title')} - {discount}%")
+
                 if discount < 90:
+                    print("❌ BELOW THRESHOLD")
                     continue
 
-                title = game.get("title", "Unknown Game")
+                title = game.get("title", "Unknown")
                 price = game["deal"]["price"]["amount"]
                 normal = game["deal"]["regular"]["amount"]
                 url = game["deal"]["url"]
@@ -143,28 +164,35 @@ async def deal_loop():
 
                 await channel.send(content="@everyone", embed=embed)
 
+                print(f"✅ SENT: {title}")
+
                 seen_deals.add(deal_id)
                 new_count += 1
 
             if new_count > 0:
                 save_seen(seen_deals)
-                print(f"Sent {new_count} deals")
+                print(f"💾 SAVED {new_count} NEW DEALS")
 
-        except Exception as e:
-            print("LOOP ERROR:", e)
+            print("💤 CYCLE COMPLETE - SLEEPING 180s")
+
+        except Exception:
+            print("❌ LOOP CRASHED:")
+            traceback.print_exc()
 
         await asyncio.sleep(180)
 
 # ---------------- EVENTS ----------------
 @client.event
 async def on_ready():
-    print("BOT ONLINE")
+    print("🤖 DISCORD CONNECTED")
+    print(f"Bot: {client.user}")
 
     channel = client.get_channel(CHANNEL_ID)
-    if channel:
-        await channel.send("🤖 Bot is now online!")
 
-    asyncio.create_task(deal_loop())
+    if channel:
+        await channel.send("🤖 Bot online!")
+
+    client.loop.create_task(deal_loop())
 
 # ---------------- RUN ----------------
 client.run(os.getenv("TOKEN"))
