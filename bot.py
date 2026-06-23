@@ -26,7 +26,7 @@ CHANNEL_ID = 856527775069503530
 intents = discord.Intents.default()
 client = discord.Client(intents=intents, heartbeat_timeout=60)
 
-# ---------------- Memory tracking ----------------
+# ---------------- Memory ----------------
 SEEN_FILE = "seen_deals.json"
 
 def load_seen():
@@ -54,29 +54,22 @@ def get_deals():
             json={
                 "country": "US",
                 "offset": 0,
-                "limit": 150,
-                "filter": {
-                    "type": ["game"],
-                    "cut": {
-                        "min": 90,
-                        "max": 100
-                    },
-                    "notPreOrder": True
-                }
+                "limit": 100
+                # ⚠️ filters removed for stability first
             },
             timeout=20
         )
 
         print("STATUS:", r.status_code)
-        print("RESPONSE SAMPLE:", r.text[:300])
 
         data = r.json()
         return data.get("list", [])
 
     except Exception as e:
-        print("POST API ERROR:", e)
+        print("API ERROR:", e)
         return []
-# ---------------- Main loop ----------------
+
+# ---------------- Bot loop ----------------
 async def deal_loop():
     await client.wait_until_ready()
     channel = client.get_channel(CHANNEL_ID)
@@ -85,10 +78,8 @@ async def deal_loop():
         try:
             deals = get_deals()
 
-            print("DEALS FOUND:", len(deals), flush=True)
-            for i, game in enumerate(deals[:5]):
-                print(i, game.get("title"))
-    
+            print("DEALS FOUND:", len(deals))
+
             new_count = 0
 
             for game in deals:
@@ -97,26 +88,17 @@ async def deal_loop():
                 if not deal_id:
                     continue
 
-                if game.get("type") != "game":
-                    continue
-
-                price = game["deal"]["price"]["amount"]
-                deal_key = f"{deal_id}_{price}"
-
-
+                # prevent duplicates
                 if deal_id in seen_deals:
                     continue
 
-                deal_key = f"{game['id']}_{game['deal']['cut']}"
-
-                if game.get("type") != "game":
-                    continue
-
                 discount = float(game["deal"]["cut"])
-                if discount < 90:   # <-- change threshold here
+
+                # 🎯 your target rule
+                if discount < 90:
                     continue
 
-                title = game["title"]
+                title = game.get("title", "Unknown Game")
                 price = game["deal"]["price"]["amount"]
                 normal = game["deal"]["regular"]["amount"]
                 url = game["deal"]["url"]
@@ -133,24 +115,24 @@ async def deal_loop():
 
                 await channel.send(content="@everyone", embed=embed)
 
+                seen_deals.add(deal_id)
                 new_count += 1
 
             if new_count > 0:
                 save_seen(seen_deals)
-                print(f"Sent {new_count} new deals")
+                print(f"Sent {new_count} deals")
 
         except Exception as e:
             print("LOOP ERROR:", e)
 
-        await asyncio.sleep(180)  # 3 minutes
-
+        await asyncio.sleep(180)
 
 # ---------------- Events ----------------
 @client.event
 async def on_ready():
     print("ON_READY FIRED")
-    channel = client.get_channel(CHANNEL_ID)
 
+    channel = client.get_channel(CHANNEL_ID)
     if channel:
         await channel.send("🤖 BOT ONLINE!")
 
