@@ -100,10 +100,8 @@ def get_deals():
 
 # ---------------- LOOP ----------------
 async def deal_loop():
-    await client.wait_until_ready()
-
     print("🟢 LOOP INITIALIZED")
-
+    await client.wait_until_ready()
     channel = client.get_channel(CHANNEL_ID)
 
     if not channel:
@@ -185,14 +183,16 @@ async def deal_loop():
 @client.event
 async def on_ready():
     print("🤖 DISCORD CONNECTED")
-    print(f"Bot: {client.user}")
+    print(f"Logged in as: {client.user}")
 
     channel = client.get_channel(CHANNEL_ID)
 
     if channel:
         await channel.send("🤖 Bot online!")
 
-    client.loop.create_task(deal_loop())
+    # IMPORTANT: start loop ONLY after ready
+    asyncio.create_task(deal_loop())
 
+    print("🟢 LOOP TASK CREATED")
 # ---------------- RUN ----------------
 client.run(os.getenv("TOKEN"))
