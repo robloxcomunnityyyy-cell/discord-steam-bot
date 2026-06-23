@@ -8,7 +8,7 @@ from threading import Thread
 
 print("BOT STARTING...")
 
-# ---------------- Flask keep-alive ----------------
+# ---------------- KEEP ALIVE SERVER ----------------
 app = Flask(__name__)
 
 @app.route("/")
@@ -20,13 +20,13 @@ Thread(target=lambda: app.run(
     port=int(os.environ.get("PORT", 10000))
 )).start()
 
-# ---------------- Discord setup ----------------
+# ---------------- DISCORD ----------------
 CHANNEL_ID = 856527775069503530
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents, heartbeat_timeout=60)
 
-# ---------------- Seen storage ----------------
+# ---------------- SEEN STORAGE ----------------
 SEEN_FILE = "seen_deals.json"
 
 def load_seen():
@@ -44,11 +44,27 @@ def save_seen(seen):
 
 seen_deals = load_seen()
 
-# ---------------- API (STABLE GET VERSION) ----------------
+# ---------------- STORE FILTER ----------------
+def is_allowed_store(game):
+    """
+    Only allow Steam and Epic Games Store deals
+    """
+    try:
+        store = game.get("deal", {}).get("store", {}).get("name", "")
+        store = store.lower()
+
+        return (
+            "steam" in store or
+            "epic" in store
+        )
+    except:
+        return False
+
+# ---------------- API ----------------
 def get_deals():
     api_key = os.getenv("ITAD_API_KEY")
     if not api_key:
-        print("Missing ITAD_API_KEY")
+        print("Missing ITAD API KEY")
         return []
 
     try:
@@ -74,7 +90,7 @@ def get_deals():
         print("REQUEST ERROR:", e)
         return []
 
-# ---------------- Bot loop ----------------
+# ---------------- BOT LOOP ----------------
 async def deal_loop():
     await client.wait_until_ready()
     channel = client.get_channel(CHANNEL_ID)
@@ -93,7 +109,12 @@ async def deal_loop():
                 if not deal_id:
                     continue
 
+                # skip duplicates
                 if deal_id in seen_deals:
+                    continue
+
+                # store filter (Steam + Epic only)
+                if not is_allowed_store(game):
                     continue
 
                 try:
@@ -101,7 +122,7 @@ async def deal_loop():
                 except:
                     continue
 
-                # 🎯 ONLY 90%+
+                # 90%+ only
                 if discount < 90:
                     continue
 
@@ -134,7 +155,7 @@ async def deal_loop():
 
         await asyncio.sleep(180)
 
-# ---------------- Events ----------------
+# ---------------- EVENTS ----------------
 @client.event
 async def on_ready():
     print("BOT ONLINE")
@@ -145,5 +166,5 @@ async def on_ready():
 
     asyncio.create_task(deal_loop())
 
-# ---------------- Run ----------------
+# ---------------- RUN ----------------
 client.run(os.getenv("TOKEN"))
