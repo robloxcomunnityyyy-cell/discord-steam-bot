@@ -6,7 +6,7 @@ import json
 from flask import Flask
 from threading import Thread
 
-print("🚀 BOT STARTING (DEBUG MODE)")
+print("🚀 BOT STARTING (STABLE MODE)")
 
 # ---------------- KEEP ALIVE ----------------
 app = Flask(__name__)
@@ -29,15 +29,10 @@ CHANNEL_ID = 856527775069503530
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
-# ---------------- CONFIG ----------------
+# ---------------- API ----------------
 ITAD_API_KEY = os.getenv("ITAD_API_KEY")
 
-# ---------------- API ----------------
 def get_deals():
-    if not ITAD_API_KEY:
-        print("❌ Missing ITAD API key")
-        return []
-
     try:
         r = requests.get(
             "https://api.isthereanydeal.com/deals/v2",
@@ -53,52 +48,47 @@ def get_deals():
         print("\n📡 STATUS:", r.status_code)
 
         if r.status_code != 200:
-            print("❌ API ERROR:")
-            print(r.text[:500])
+            print("❌ API ERROR:", r.text[:200])
             return []
 
         data = r.json()
         deals = data.get("list", [])
 
-        print(f"📦 DEALS FOUND: {len(deals)}")
+        print("📦 DEALS FOUND:", len(deals))
 
         return deals
 
     except Exception as e:
-        print("❌ REQUEST FAILED:", e)
+        print("❌ REQUEST ERROR:", e)
         return []
 
-# ---------------- LOOP (DEBUG ONLY) ----------------
-async def loop():
+# ---------------- LOOP ----------------
+async def deal_loop():
     await client.wait_until_ready()
 
     print("\n🟢 LOOP STARTED")
 
     while True:
-        try:
-            deals = get_deals()
+        deals = get_deals()
 
-            print("\n🔍 SHOWING RAW SAMPLE (FIRST 3 ITEMS):")
+        print("\n🔍 SAMPLE DATA CHECK:")
 
-            for i, game in enumerate(deals[:3]):
-                print("\n-------------------------")
-                print(f"GAME #{i}")
-                print(json.dumps(game, indent=2)[:2000])  # safe trimmed output
-
-            print("\n💤 WAITING 180s...\n")
-
-        except Exception as e:
-            print("❌ LOOP ERROR:", e)
+        for i, game in enumerate(deals[:3]):
+            print(f"\nGAME {i}: {game.get('title')}")
 
         await asyncio.sleep(180)
 
 # ---------------- EVENTS ----------------
 @client.event
-async def on_ready():
-    print("\n🤖 DISCORD CONNECTED")
-    print(f"USER: {client.user}")
+async def setup_hook():
+    print("🧠 SETUP_HOOK RUNNING")
 
-    asyncio.create_task(loop())
+    asyncio.create_task(deal_loop())
+
+@client.event
+async def on_ready():
+    print("🤖 ON_READY FIRED")
+    print("USER:", client.user)
 
 # ---------------- RUN ----------------
 client.run(os.getenv("TOKEN"))
