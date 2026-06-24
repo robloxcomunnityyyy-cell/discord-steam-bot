@@ -5,9 +5,8 @@ import asyncio
 import json
 from flask import Flask
 from threading import Thread
-import traceback
 
-print("🚀 BOT FILE LOADED")
+print("🚀 BOT STARTING...")
 
 # ---------------- KEEP ALIVE ----------------
 app = Flask(__name__)
@@ -16,46 +15,23 @@ app = Flask(__name__)
 def home():
     return "Bot is running!"
 
-Thread(target=lambda: app.run(
-    host="0.0.0.0",
-    port=int(os.environ.get("PORT", 10000))
-)).start()
+Thread(
+    target=lambda: app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 10000))
+    ),
+    daemon=True
+).start()
 
 # ---------------- DISCORD ----------------
 CHANNEL_ID = 856527775069503530
 
 intents = discord.Intents.default()
-client = discord.Client(intents=intents, heartbeat_timeout=60)
+client = discord.Client(intents=intents)
 
-# ---------------- STORAGE ----------------
-SEEN_FILE = "seen_deals.json"
-
-def load_seen():
-    if os.path.exists(SEEN_FILE):
-        try:
-            with open(SEEN_FILE, "r") as f:
-                return set(json.load(f))
-        except:
-            return set()
-    return set()
-
-def save_seen(seen):
-    with open(SEEN_FILE, "w") as f:
-        json.dump(list(seen), f)
-
-seen_deals = load_seen()
-
-# ---------------- STORE FILTER ----------------
-def is_allowed_store(game):
-    store = game.get("deal", {}).get("store", {}).get("name", "")
-    store = store.lower()
-
-    allowed = ("steam" in store) or ("epic" in store)
-
-    if not allowed:
-        print(f"🚫 SKIP STORE: {store}")
-
-    return allowed
+# ---------------- CONFIG ----------------
+MIN_DISCOUNT = 90
+ALLOWED_STORES = ["steam", "epic"]
 
 # ---------------- API ----------------
 def get_deals():
@@ -64,8 +40,6 @@ def get_deals():
     if not api_key:
         print("❌ Missing API key")
         return []
-
-    print("📡 REQUESTING API...")
 
     try:
         r = requests.get(
@@ -79,118 +53,99 @@ def get_deals():
             timeout=20
         )
 
-        print(f"📡 STATUS CODE: {r.status_code}")
+        print("STATUS:", r.status_code)
 
         if r.status_code != 200:
-            print("❌ API ERROR:")
-            print(r.text[:300])
+            print("API ERROR:", r.text[:300])
             return []
 
         data = r.json()
         deals = data.get("list", [])
 
-        print(f"📦 RAW DEALS RECEIVED: {len(deals)}")
+        print("DEALS FOUND:", len(deals))
 
         return deals
 
     except Exception as e:
-        print("❌ REQUEST FAILED:")
-        print(e)
+        print("REQUEST ERROR:", e)
         return []
 
-# ---------------- LOOP ----------------
-async def deal_loop():
-    print("🟢 LOOP STARTED")
+# ---------------- FILTER HELPERS ----------------
+def get_discount(game):
+    try:
+        return float(game["deal"]["cut"])
+    except:
+        return 0
 
+
+def get_store_text(game):
+    try:
+        return str(game["deal"]["store"]).lower()
+    except:
+        return ""
+
+# ---------------- LOOP ----------------
+seen = set()
+
+async def loop():
+    await client.wait_until_ready()
     channel = await client.fetch_channel(CHANNEL_ID)
 
     while True:
-        try:
-            print("\n🔁 NEW CYCLE STARTED")
+        print("\n🔁 NEW CYCLE")
 
-            deals = get_deals()
+        deals = get_deals()
 
-            print(f"📊 DEALS FOUND THIS CYCLE: {len(deals)}")
+        sent = 0
 
-            new_count = 0
+        for game in deals:
+            deal_id = game.get("id")
+            if not deal_id:
+                continue
 
-            for i, game in enumerate(deals):
+            if deal_id in seen:
+                continue
 
-                deal_id = game.get("id")
+            discount = get_discount(game)
 
-                if not deal_id:
-                    print(f"⚠️ SKIP NO ID [{i}]")
-                    continue
+            if discount < MIN_DISCOUNT:
+                continue
 
-                if deal_id in seen_deals:
-                    print(f"🔁 ALREADY SEEN: {deal_id}")
-                    continue
+            store_text = get_store_text(game)
 
-                if not is_allowed_store(game):
-                    continue
+            if not any(s in store_text for s in ALLOWED_STORES):
+                print("🚫 STORE SKIP:", store_text)
+                continue
 
-                try:
-                    discount = float(game["deal"]["cut"])
-                except:
-                    print("⚠️ BAD DISCOUNT DATA")
-                    continue
+            title = game.get("title", "Unknown")
 
-                print(f"🎮 {game.get('title')} - {discount}%")
+            price = game.get("deal", {}).get("price", {}).get("amount", "0")
+            normal = game.get("deal", {}).get("regular", {}).get("amount", "0")
+            url = game.get("deal", {}).get("url", "")
 
-                if discount < 90:
-                    print("❌ BELOW THRESHOLD")
-                    continue
+            print(f"🔥 FOUND: {title} ({discount}%)")
 
-                title = game.get("title", "Unknown")
-                price = game["deal"]["price"]["amount"]
-                normal = game["deal"]["regular"]["amount"]
-                url = game["deal"]["url"]
+            embed = discord.Embed(
+                title=f"🔥 {title} - {round(discount)}% OFF",
+                url=url,
+                description=f"~~${normal}~~ → **${price}**"
+            )
 
-                embed = discord.Embed(
-                    title=f"🔥 {title} is {round(discount)}% OFF",
-                    url=url,
-                    description=f"~~${normal}~~ → **${price}**"
-                )
+            await channel.send(content="@everyone", embed=embed)
 
-                img = game.get("assets", {}).get("boxart")
-                if img:
-                    embed.set_image(url=img)
+            seen.add(deal_id)
+            sent += 1
 
-                await channel.send(content="@everyone", embed=embed)
-
-                print(f"✅ SENT: {title}")
-
-                seen_deals.add(deal_id)
-                new_count += 1
-
-            if new_count > 0:
-                save_seen(seen_deals)
-                print(f"💾 SAVED {new_count} NEW DEALS")
-
-            print("💤 SLEEPING 180s")
-
-        except Exception:
-            print("❌ LOOP CRASHED:")
-            traceback.print_exc()
+        print(f"✔ SENT THIS CYCLE: {sent}")
 
         await asyncio.sleep(180)
 
 # ---------------- EVENTS ----------------
 @client.event
-async def setup_hook():
-    print("🧠 SETUP HOOK RUNNING")
-    client.loop.create_task(deal_loop())
-
-@client.event
 async def on_ready():
-    print("🤖 DISCORD CONNECTED")
-    print(f"Logged in as: {client.user}")
+    print("🤖 BOT ONLINE:", client.user)
 
-    try:
-        channel = await client.fetch_channel(CHANNEL_ID)
-        await channel.send("🤖 Bot online!")
-    except Exception as e:
-        print("❌ FAILED TO SEND START MESSAGE:", e)
+    asyncio.create_task(loop())
 
 # ---------------- RUN ----------------
 client.run(os.getenv("TOKEN"))
