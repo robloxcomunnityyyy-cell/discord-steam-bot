@@ -6,7 +6,7 @@ import json
 from flask import Flask
 from threading import Thread
 
-print("🚀 BOT STARTING...")
+print("🚀 BOT STARTING (DEBUG MODE)")
 
 # ---------------- KEEP ALIVE ----------------
 app = Flask(__name__)
@@ -30,120 +30,73 @@ intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
 # ---------------- CONFIG ----------------
-MIN_DISCOUNT = 90
-ALLOWED_STORES = ["steam", "epic"]
+ITAD_API_KEY = os.getenv("ITAD_API_KEY")
 
 # ---------------- API ----------------
 def get_deals():
-    api_key = os.getenv("ITAD_API_KEY")
-
-    if not api_key:
-        print("❌ Missing API key")
+    if not ITAD_API_KEY:
+        print("❌ Missing ITAD API key")
         return []
 
     try:
         r = requests.get(
             "https://api.isthereanydeal.com/deals/v2",
-            headers={"ITAD-API-Key": api_key},
+            headers={"ITAD-API-Key": ITAD_API_KEY},
             params={
                 "country": "US",
-                "limit": 100,
+                "limit": 20,
                 "offset": 0
             },
             timeout=20
         )
 
-        print("STATUS:", r.status_code)
+        print("\n📡 STATUS:", r.status_code)
 
         if r.status_code != 200:
-            print("API ERROR:", r.text[:300])
+            print("❌ API ERROR:")
+            print(r.text[:500])
             return []
 
         data = r.json()
         deals = data.get("list", [])
 
-        print("DEALS FOUND:", len(deals))
+        print(f"📦 DEALS FOUND: {len(deals)}")
 
         return deals
 
     except Exception as e:
-        print("REQUEST ERROR:", e)
+        print("❌ REQUEST FAILED:", e)
         return []
 
-# ---------------- FILTER HELPERS ----------------
-def get_discount(game):
-    try:
-        return float(game["deal"]["cut"])
-    except:
-        return 0
-
-
-def get_store_text(game):
-    try:
-        return str(game["deal"]["store"]).lower()
-    except:
-        return ""
-
-# ---------------- LOOP ----------------
-seen = set()
-
+# ---------------- LOOP (DEBUG ONLY) ----------------
 async def loop():
     await client.wait_until_ready()
-    channel = await client.fetch_channel(CHANNEL_ID)
+
+    print("\n🟢 LOOP STARTED")
 
     while True:
-        print("\n🔁 NEW CYCLE")
+        try:
+            deals = get_deals()
 
-        deals = get_deals()
+            print("\n🔍 SHOWING RAW SAMPLE (FIRST 3 ITEMS):")
 
-        sent = 0
+            for i, game in enumerate(deals[:3]):
+                print("\n-------------------------")
+                print(f"GAME #{i}")
+                print(json.dumps(game, indent=2)[:2000])  # safe trimmed output
 
-        for game in deals:
-            deal_id = game.get("id")
-            if not deal_id:
-                continue
+            print("\n💤 WAITING 180s...\n")
 
-            if deal_id in seen:
-                continue
-
-            discount = get_discount(game)
-
-            if discount < MIN_DISCOUNT:
-                continue
-
-            store_text = get_store_text(game)
-
-            if not any(s in store_text for s in ALLOWED_STORES):
-                print("🚫 STORE SKIP:", store_text)
-                continue
-
-            title = game.get("title", "Unknown")
-
-            price = game.get("deal", {}).get("price", {}).get("amount", "0")
-            normal = game.get("deal", {}).get("regular", {}).get("amount", "0")
-            url = game.get("deal", {}).get("url", "")
-
-            print(f"🔥 FOUND: {title} ({discount}%)")
-
-            embed = discord.Embed(
-                title=f"🔥 {title} - {round(discount)}% OFF",
-                url=url,
-                description=f"~~${normal}~~ → **${price}**"
-            )
-
-            await channel.send(content="@everyone", embed=embed)
-
-            seen.add(deal_id)
-            sent += 1
-
-        print(f"✔ SENT THIS CYCLE: {sent}")
+        except Exception as e:
+            print("❌ LOOP ERROR:", e)
 
         await asyncio.sleep(180)
 
 # ---------------- EVENTS ----------------
 @client.event
 async def on_ready():
-    print("🤖 BOT ONLINE:", client.user)
+    print("\n🤖 DISCORD CONNECTED")
+    print(f"USER: {client.user}")
 
     asyncio.create_task(loop())
 
